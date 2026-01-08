@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>待办任务清单</title>
+    <script src="https://unpkg.com/vue@3.4.0/dist/vue.global.js"></script>
+    <style>
+        /* 重置样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 通用样式 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background-color: #2196f3;
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        main {
+            padding: 20px 0;
+        }
+
+        /* 按钮样式 */
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* 表单样式 */
+        input, textarea, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+        }
+
+        /* 组件样式 */
+        .todo-add {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .todo-add h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .todo-add form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .btn-add {
+            padding: 12px 24px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            align-self: flex-start;
+        }
+
+        .btn-add:hover {
+            background-color: #1976d2;
+        }
+
+        .todo-list {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .todo-list h2 {
+            margin-bottom: 16px;
+        }
+
+        .todo-filter {
+            margin-bottom: 16px;
+            padding: 12px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .todo-filter h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #888;
+        }
+
+        .filter-options {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .filter-options button {
+            padding: 4px 12px;
+            border: 1px solid #ddd;
+            border-radius: 16px;
+            background-color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .filter-options button:hover {
+            border-color: #2196f3;
+        }
+
+        .filter-options button.active {
+            background-color: #2196f3;
+            color: white;
+            border-color: #2196f3;
+        }
+
+        .task-container {
+            margin: 20px 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .todo-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            background-color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .todo-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .todo-item.completed {
+            background-color: #f0f9f0;
+            opacity: 0.8;
+        }
+
+        .task-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .status-checkbox {
+            margin-top: 4px;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-info h3 {
+            margin: 0 0 4px 0;
+            font-size: 18px;
+        }
+
+        .task-info p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .priority {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .priority.high {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .priority.medium {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .priority.low {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .category {
+            background-color: #e3f2fd;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: #1565c0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-edit, .btn-delete {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-edit {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .btn-delete {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .todo-edit {
+            margin-top: 12px;
+            padding: 16px;
+            background-color: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .todo-edit form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-save, .btn-cancel {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-save {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .btn-cancel {
+            background-color: #f5f5f5;
+            color: #666;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .stats p {
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .filter-row {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .task-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>待办任务清单</h1>
+        </header>
+        <main class="container">
+            <!-- 添加任务组件 -->
+            <div class="todo-add">
+                <h2>添加新任务</h2>
+                <form @submit.prevent="handleAddTask">
+                    <div class="form-group">
+                        <label for="title">标题</label>
+                        <input 
+                            type="text" 
+                            id="title" 
+                            v-model="newTask.title" 
+                            required
+                            placeholder="输入任务标题"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="description">描述</label>
+                        <textarea 
+                            id="description" 
+                            v-model="newTask.description"
+                            rows="3"
+                            placeholder="输入任务描述"
+                        ></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="category">分类</label>
+                            <select 
+                                id="category" 
+                                v-model="newTask.category"
+                            >
+                                <option value="work">工作</option>
+                                <option value="life">生活</option>
+                                <option value="study">学习</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="priority">优先级</label>
+                            <select 
+                                id="priority" 
+                                v-model="newTask.priority"
+                            >
+                                <option value="high">高</option>
+                                <option value="medium">中</option>
+                                <option value="low">低</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dueDate">截止日期</label>
+                            <input 
+                                type="date" 
+                                id="dueDate" 
+                                v-model="newTask.dueDate"
+                            />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-add">添加任务</button>
+                </form>
+            </div>
+
+            <!-- 任务列表组件 -->
+            <div class="todo-list">
+                <h2>任务清单</h2>
+                <!-- 筛选组件 -->
+                <div class="todo-filter">
+                    <h3>筛选条件</h3>
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>分类:</label>
+                            <div class="filter-options">
+                                <button 
+                                    v-for="category in categories" 
+                                    :key="category.value"
+                                    @click="updateFilter('category', category.value)"
+                                    :class="{ active: filters.category === category.value }"
+                                >
+                                    {{ category.label }}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>优先级:</label>
+                            <div class="filter-options">
+                                <button 
+                                    v-for="priority in priorities" 
+                                    :key="priority.value"
+                                    @click="updateFilter('priority', priority.value)"
+                                    :class="{ active: filters.priority === priority.value }"
+                                >
+                                    {{ priority.label }}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>状态:</label>
+                            <div class="filter-options">
+                                <button 
+                                    v-for="status in statuses" 
+                                    :key="status.value"
+                                    @click="updateFilter('status', status.value)"
+                                    :class="{ active: filters.status === status.value }"
+                                >
+                                    {{ status.label }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 任务列表 -->
+                <div class="task-container">
+                    <div 
+                        v-for="task in filteredTasks" 
+                        :key="task.id" 
+                        class="todo-item" 
+                        :class="{ 'completed': task.completed }"
+                    >
+                        <div class="task-header">
+                            <input 
+                                type="checkbox" 
+                                :checked="task.completed" 
+                                @change="toggleComplete(task)"
+                                class="status-checkbox"
+                            />
+                            <div class="task-info">
+                                <h3>{{ task.title }}</h3>
+                                <p>{{ task.description }}</p>
+                            </div>
+                            <div class="priority" :class="task.priority">
+                                {{ getPriorityText(task.priority) }}
+                            </div>
+                        </div>
+                        <div class="task-meta">
+                            <span class="category">{{ task.category }}</span>
+                            <span class="due-date">{{ formatDate(task.dueDate) }}</span>
+                            <div class="actions">
+                                <button @click="editTask(task)" class="btn-edit">
+                                    编辑
+                                </button>
+                                <button @click="deleteTask(task.id)" class="btn-delete">
+                                    删除
+                                </button>
+                            </div>
+                        </div>
+                        <!-- 编辑任务组件 -->
+                        <div v-if="editingTask && editingTask.id === task.id" class="todo-edit">
+                            <form @submit.prevent="saveEdit">
+                                <div class="form-group">
+                                    <label for="edit-title">标题</label>
+                                    <input 
+                                        type="text" 
+                                        id="edit-title" 
+                                        v-model="editingTask.title" 
+                                        required
+                                    />
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-description">描述</label>
+                                    <textarea 
+                                        id="edit-description" 
+                                        v-model="editingTask.description"
+                                        rows="3"
+                                    ></textarea>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="edit-category">分类</label>
+                                        <select 
+                                            id="edit-category" 
+                                            v-model="editingTask.category"
+                                        >
+                                            <option value="work">工作</option>
+                                            <option value="life">生活</option>
+                                            <option value="study">学习</option>
+                                            <option value="other">其他</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="edit-priority">优先级</label>
+                                        <select 
+                                            id="edit-priority" 
+                                            v-model="editingTask.priority"
+                                        >
+                                            <option value="high">高</option>
+                                            <option value="medium">中</option>
+                                            <option value="low">低</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="edit-dueDate">截止日期</label>
+                                        <input 
+                                            type="date" 
+                                            id="edit-dueDate" 
+                                            v-model="editingTask.dueDate"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-save">保存</button>
+                                    <button type="button" @click="cancelEdit" class="btn-cancel">取消</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!-- 统计信息 -->
+                <div class="stats">
+                    <p>总任务数: {{ tasks.length }}</p>
+                    <p>已完成: {{ completedCount }}</p>
+                    <p>未完成: {{ pendingCount }}</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 本地存储工具
+        const storage = {
+            get(key, defaultValue = null) {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value ? JSON.parse(value) : defaultValue;
+                } catch (e) {
+                    console.warn('Error getting from localStorage:', e);
+                    return defaultValue;
+                }
+            },
+            set(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    return true;
+                } catch (e) {
+                    console.warn('Error setting to localStorage:', e);
+                    return false;
+                }
+            }
+        };
+
+        // 创建Vue应用
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                // 任务数据
+                const tasks = ref(storage.get('todo_tasks', []));
+                
+                // 新任务数据
+                const newTask = ref({
+                    title: '',
+                    description: '',
+                    category: 'work',
+                    priority: 'medium',
+                    dueDate: '',
+                    completed: false
+                });
+
+                // 筛选条件
+                const filters = ref({
+                    category: 'all',
+                    priority: 'all',
+                    status: 'all'
+                });
+
+                // 编辑中的任务
+                const editingTask = ref(null);
+
+                // 分类选项
+                const categories = ref([
+                    { value: 'all', label: '全部' },
+                    { value: 'work', label: '工作' },
+                    { value: 'life', label: '生活' },
+                    { value: 'study', label: '学习' },
+                    { value: 'other', label: '其他' }
+                ]);
+
+                // 优先级选项
+                const priorities = ref([
+                    { value: 'all', label: '全部' },
+                    { value: 'high', label: '高' },
+                    { value: 'medium', label: '中' },
+                    { value: 'low', label: '低' }
+                ]);
+
+                // 状态选项
+                const statuses = ref([
+                    { value: 'all', label: '全部' },
+                    { value: 'pending', label: '未完成' },
+                    { value: 'completed', label: '已完成' }
+                ]);
+
+                // 保存任务到本地存储
+                const saveTasks = () => {
+                    storage.set('todo_tasks', tasks.value);
+                };
+
+                // 添加任务
+                const handleAddTask = () => {
+                    const task = {
+                        ...newTask.value,
+                        id: Date.now().toString(),
+                        createdAt: new Date().toISOString(),
+                        completed: false
+                    };
+                    tasks.value.unshift(task);
+                    saveTasks();
+                    // 重置表单
+                    newTask.value = {
+                        title: '',
+                        description: '',
+                        category: 'work',
+                        priority: 'medium',
+                        dueDate: '',
+                        completed: false
+                    };
+                };
+
+                // 切换任务完成状态
+                const toggleComplete = (task) => {
+                    task.completed = !task.completed;
+                    saveTasks();
+                };
+
+                // 编辑任务
+                const editTask = (task) => {
+                    editingTask.value = { ...task };
+                };
+
+                // 保存编辑
+                const saveEdit = () => {
+                    const index = tasks.value.findIndex(t => t.id === editingTask.value.id);
+                    if (index !== -1) {
+                        tasks.value[index] = editingTask.value;
+                        saveTasks();
+                        editingTask.value = null;
+                    }
+                };
+
+                // 取消编辑
+                const cancelEdit = () => {
+                    editingTask.value = null;
+                };
+
+                // 删除任务
+                const deleteTask = (taskId) => {
+                    tasks.value = tasks.value.filter(task => task.id !== taskId);
+                    saveTasks();
+                };
+
+                // 更新筛选条件
+                const updateFilter = (filterType, value) => {
+                    filters.value[filterType] = value;
+                };
+
+                // 格式化日期
+                const formatDate = (date) => {
+                    if (!date) return '';
+                    return new Date(date).toLocaleDateString('zh-CN');
+                };
+
+                // 获取优先级文本
+                const getPriorityText = (priority) => {
+                    const map = {
+                        high: '高',
+                        medium: '中',
+                        low: '低'
+                    };
+                    return map[priority] || '中';
+                };
+
+                // 筛选后的任务
+                const filteredTasks = computed(() => {
+                    return tasks.value.filter(task => {
+                        const categoryMatch = filters.value.category === 'all' || task.category === filters.value.category;
+                        const priorityMatch = filters.value.priority === 'all' || task.priority === filters.value.priority;
+                        const statusMatch = filters.value.status === 'all' || 
+                            (filters.value.status === 'completed' && task.completed) || 
+                            (filters.value.status === 'pending' && !task.completed);
+                        return categoryMatch && priorityMatch && statusMatch;
+                    });
+                });
+
+                // 已完成任务数
+                const completedCount = computed(() => {
+                    return tasks.value.filter(task => task.completed).length;
+                });
+
+                // 未完成任务数
+                const pendingCount = computed(() => {
+                    return tasks.value.filter(task => !task.completed).length;
+                });
+
+                return {
+                    tasks,
+                    newTask,
+                    filters,
+                    editingTask,
+                    categories,
+                    priorities,
+                    statuses,
+                    handleAddTask,
+                    toggleComplete,
+                    editTask,
+                    saveEdit,
+                    cancelEdit,
+                    deleteTask,
+                    updateFilter,
+                    formatDate,
+                    getPriorityText,
+                    filteredTasks,
+                    completedCount,
+                    pendingCount
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
